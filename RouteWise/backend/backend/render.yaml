@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: chakrafinance
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn backend.wsgi:application"
+    disk:
+      name: sqlite-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: "*"
+      - key: DJANGO_CORS_ALLOW_ALL_ORIGINS
+        value: "true"
+      - key: PYTHON_VERSION
+        value: "3.11.0"
