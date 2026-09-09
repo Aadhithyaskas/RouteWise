@@ -24,14 +24,29 @@ load_dotenv(BASE_DIR / ".env")
 # SECURITY
 # =========================================================
 
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-local-dev-key")
+SECRET_KEY = os.getenv(
+    "SECRET_KEY",
+    "django-insecure-local-dev-key"
+)
 
-DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
+DEBUG = os.getenv(
+    "DJANGO_DEBUG",
+    "True"
+).lower() == "true"
 
-ALLOWED_HOSTS = os.getenv(
-    "DJANGO_ALLOWED_HOSTS",
-    "localhost,127.0.0.1"
-).split(",")
+
+# =========================================================
+# ALLOWED HOSTS
+# =========================================================
+
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv(
+        "DJANGO_ALLOWED_HOSTS",
+        "localhost,127.0.0.1"
+    ).split(",")
+    if host.strip()
+]
 
 
 # =========================================================
@@ -39,15 +54,19 @@ ALLOWED_HOSTS = os.getenv(
 # =========================================================
 
 INSTALLED_APPS = [
+
+    # CORS
     "corsheaders",
+
+    # Django REST Framework
     "rest_framework",
     "rest_framework_simplejwt",
 
-    # Your apps
+    # Your applications
     "admin_app",
     "customer_app",
 
-    # Django apps
+    # Django applications
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -62,17 +81,25 @@ INSTALLED_APPS = [
 # =========================================================
 
 MIDDLEWARE = [
+
     "django.middleware.security.SecurityMiddleware",
 
-    # WhiteNoise - only once
+    # WhiteNoise
     "whitenoise.middleware.WhiteNoiseMiddleware",
 
+    # CORS
     "corsheaders.middleware.CorsMiddleware",
+
     "django.contrib.sessions.middleware.SessionMiddleware",
+
     "django.middleware.common.CommonMiddleware",
+
     "django.middleware.csrf.CsrfViewMiddleware",
+
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+
     "django.contrib.messages.middleware.MessageMiddleware",
+
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -93,8 +120,13 @@ WSGI_APPLICATION = "backend.wsgi.application"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+
+        "DIRS": [
+            BASE_DIR / "templates"
+        ],
+
         "APP_DIRS": True,
+
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.request",
@@ -110,9 +142,14 @@ TEMPLATES = [
 # DATABASE
 # =========================================================
 
-DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    ""
+).strip()
+
 
 if DATABASE_URL:
+
     DATABASES = {
         "default": dj_database_url.parse(
             DATABASE_URL,
@@ -121,8 +158,10 @@ if DATABASE_URL:
             ssl_require=DATABASE_URL.startswith("postgres"),
         )
     }
+
 else:
-    # Local fallback database
+
+    # Local development fallback
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -136,6 +175,7 @@ else:
 # =========================================================
 
 REST_FRAMEWORK = {
+
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
@@ -151,9 +191,18 @@ REST_FRAMEWORK = {
 # =========================================================
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    "AUTH_HEADER_TYPES": ("Bearer",),
+
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        minutes=60
+    ),
+
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        days=1
+    ),
+
+    "AUTH_HEADER_TYPES": (
+        "Bearer",
+    ),
 }
 
 
@@ -162,7 +211,9 @@ SIMPLE_JWT = {
 # =========================================================
 
 AUTHENTICATION_BACKENDS = [
+
     "admin_app.backends.MultiRoleBackend",
+
     "django.contrib.auth.backends.ModelBackend",
 ]
 
@@ -172,31 +223,54 @@ AUTHENTICATION_BACKENDS = [
 # =========================================================
 
 AUTH_PASSWORD_VALIDATORS = [
+
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+        "NAME":
+        "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
     },
+
     {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"
+        "NAME":
+        "django.contrib.auth.password_validation.MinimumLengthValidator"
     },
+
     {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"
+        "NAME":
+        "django.contrib.auth.password_validation.CommonPasswordValidator"
     },
+
     {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"
+        "NAME":
+        "django.contrib.auth.password_validation.NumericPasswordValidator"
     },
 ]
 
 
 # =========================================================
-# CORS
+# CORS CONFIGURATION
 # =========================================================
 
-CORS_ALLOW_ALL_ORIGINS = (
-    os.getenv(
-        "DJANGO_CORS_ALLOW_ALL_ORIGINS",
-        "True"
-    ).lower() == "true"
-)
+# Production frontend
+CORS_ALLOWED_ORIGINS = [
+
+    "https://routewiseoptimizer.netlify.app",
+
+]
+
+
+# Allow credentials such as cookies/authentication
+CORS_ALLOW_CREDENTIALS = True
+
+
+# =========================================================
+# CSRF CONFIGURATION
+# =========================================================
+
+CSRF_TRUSTED_ORIGINS = [
+
+    "https://routewiseoptimizer.netlify.app",
+
+]
 
 
 # =========================================================
@@ -219,6 +293,7 @@ USE_TZ = True
 STATIC_URL = "/static/"
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
 
 STATICFILES_STORAGE = (
     "whitenoise.storage.CompressedManifestStaticFilesStorage"
@@ -247,14 +322,20 @@ EMAIL_BACKEND = os.getenv(
     ),
 )
 
+
 EMAIL_HOST = os.getenv(
     "DJANGO_EMAIL_HOST",
     "smtp.gmail.com"
 )
 
+
 EMAIL_PORT = int(
-    os.getenv("DJANGO_EMAIL_PORT", "587")
+    os.getenv(
+        "DJANGO_EMAIL_PORT",
+        "587"
+    )
 )
+
 
 EMAIL_USE_TLS = (
     os.getenv(
@@ -263,15 +344,18 @@ EMAIL_USE_TLS = (
     ).lower() == "true"
 )
 
+
 EMAIL_HOST_USER = os.getenv(
     "DJANGO_EMAIL_HOST_USER",
     ""
 )
 
+
 EMAIL_HOST_PASSWORD = os.getenv(
     "DJANGO_EMAIL_HOST_PASSWORD",
     ""
 )
+
 
 DEFAULT_FROM_EMAIL = os.getenv(
     "DJANGO_DEFAULT_FROM_EMAIL",
@@ -283,4 +367,6 @@ DEFAULT_FROM_EMAIL = os.getenv(
 # DEFAULT PRIMARY KEY
 # =========================================================
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+DEFAULT_AUTO_FIELD = (
+    "django.db.models.BigAutoField"
+)
