@@ -39,16 +39,16 @@ DEBUG = os.getenv(
 # ALLOWED HOSTS
 # =========================================================
 
+RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+
 ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv(
-        "DJANGO_ALLOWED_HOSTS",
-        "localhost,127.0.0.1"
-    ).split(",")
-    if host.strip()
+    "localhost",
+    "127.0.0.1",
+    "routewise-s6bo.onrender.com",
 ]
 
-
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 # =========================================================
 # APPLICATIONS
 # =========================================================
