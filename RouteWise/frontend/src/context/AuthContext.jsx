@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { authApi } from '../services/api.js'
-import { AuthContext } from './authContext.js'
+import { AuthContext } from './AuthContext.js'
 
 const STORAGE_KEY = 'routewise-auth'
 
