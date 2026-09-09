@@ -2,42 +2,52 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from dotenv import load_dotenv
+import dj_database_url
+
+
+# =========================================================
+# BASE DIRECTORY
+# =========================================================
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-try:
-    import dj_database_url  # type: ignore
-except ImportError:  # pragma: no cover - optional local dependency
-    dj_database_url = None
+
+# =========================================================
+# ENVIRONMENT VARIABLES
+# =========================================================
+
+load_dotenv(BASE_DIR / ".env")
 
 
-SECRET_KEY = os.getenv(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-5(h7*uoydjm^6z0i9xwex_$365nbpe1iyas^#@!(mc#qxj_97g",
-)
+# =========================================================
+# SECURITY
+# =========================================================
+
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-local-dev-key")
+
 DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
-ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",") if host.strip()]
 
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
-}
+ALLOWED_HOSTS = os.getenv(
+    "DJANGO_ALLOWED_HOSTS",
+    "localhost,127.0.0.1"
+).split(",")
 
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    "AUTH_HEADER_TYPES": ("Bearer",),
-}
+
+# =========================================================
+# APPLICATIONS
+# =========================================================
 
 INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "rest_framework_simplejwt",
+
+    # Your apps
     "admin_app",
     "customer_app",
+
+    # Django apps
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -46,8 +56,17 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 ]
 
+
+# =========================================================
+# MIDDLEWARE
+# =========================================================
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+
+    # WhiteNoise - only once
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -57,14 +76,19 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-try:
-    import whitenoise  # type: ignore  # noqa: F401
-except ImportError:  # pragma: no cover - optional local dependency
-    whitenoise = None
-else:
-    MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
+
+# =========================================================
+# URL / WSGI
+# =========================================================
 
 ROOT_URLCONF = "backend.urls"
+
+WSGI_APPLICATION = "backend.wsgi.application"
+
+
+# =========================================================
+# TEMPLATES
+# =========================================================
 
 TEMPLATES = [
     {
@@ -81,19 +105,24 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "backend.wsgi.application"
-database_url = os.getenv("DATABASE_URL", "").strip()
-# database_url = os.getenv("postgresql://postgres:Aadhi@mamcet26@db.huzwwparqbknjrcpyagk.supabase.co:5432/postgres", "").strip()
-if database_url and dj_database_url:
+
+# =========================================================
+# DATABASE
+# =========================================================
+
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+
+if DATABASE_URL:
     DATABASES = {
         "default": dj_database_url.parse(
-            database_url,
+            DATABASE_URL,
             conn_max_age=600,
             conn_health_checks=True,
-            ssl_require=database_url.startswith("postgres"),
+            ssl_require=DATABASE_URL.startswith("postgres"),
         )
     }
 else:
+    # Local fallback database
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -101,42 +130,157 @@ else:
         }
     }
 
-CORS_ALLOW_ALL_ORIGINS = os.getenv("DJANGO_CORS_ALLOW_ALL_ORIGINS", "True").lower() == "true"
+
+# =========================================================
+# DJANGO REST FRAMEWORK
+# =========================================================
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticated",
+    ),
+}
+
+
+# =========================================================
+# JWT
+# =========================================================
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+
+# =========================================================
+# AUTHENTICATION BACKENDS
+# =========================================================
 
 AUTHENTICATION_BACKENDS = [
     "admin_app.backends.MultiRoleBackend",
     "django.contrib.auth.backends.ModelBackend",
 ]
 
+
+# =========================================================
+# PASSWORD VALIDATION
+# =========================================================
+
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"
+    },
 ]
 
+
+# =========================================================
+# CORS
+# =========================================================
+
+CORS_ALLOW_ALL_ORIGINS = (
+    os.getenv(
+        "DJANGO_CORS_ALLOW_ALL_ORIGINS",
+        "True"
+    ).lower() == "true"
+)
+
+
+# =========================================================
+# INTERNATIONALIZATION
+# =========================================================
+
 LANGUAGE_CODE = "en-us"
+
 TIME_ZONE = "UTC"
+
 USE_I18N = True
+
 USE_TZ = True
 
+
+# =========================================================
+# STATIC FILES
+# =========================================================
+
 STATIC_URL = "/static/"
+
 STATIC_ROOT = BASE_DIR / "staticfiles"
-if whitenoise:
-    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+STATICFILES_STORAGE = (
+    "whitenoise.storage.CompressedManifestStaticFilesStorage"
+)
+
+
+# =========================================================
+# MEDIA FILES
+# =========================================================
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+MEDIA_ROOT = BASE_DIR / "media"
+
+
+# =========================================================
+# EMAIL
+# =========================================================
 
 EMAIL_BACKEND = os.getenv(
     "DJANGO_EMAIL_BACKEND",
-    "django.core.mail.backends.console.EmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend",
+    (
+        "django.core.mail.backends.console.EmailBackend"
+        if DEBUG
+        else "django.core.mail.backends.smtp.EmailBackend"
+    ),
 )
-EMAIL_HOST = os.getenv("DJANGO_EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.getenv("DJANGO_EMAIL_PORT", "587"))
-EMAIL_USE_TLS = os.getenv("DJANGO_EMAIL_USE_TLS", "True").lower() == "true"
-EMAIL_HOST_USER = os.getenv("DJANGO_EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.getenv("DJANGO_EMAIL_HOST_PASSWORD", "")
-DEFAULT_FROM_EMAIL = os.getenv("DJANGO_DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-reply@example.com")
+
+EMAIL_HOST = os.getenv(
+    "DJANGO_EMAIL_HOST",
+    "smtp.gmail.com"
+)
+
+EMAIL_PORT = int(
+    os.getenv("DJANGO_EMAIL_PORT", "587")
+)
+
+EMAIL_USE_TLS = (
+    os.getenv(
+        "DJANGO_EMAIL_USE_TLS",
+        "True"
+    ).lower() == "true"
+)
+
+EMAIL_HOST_USER = os.getenv(
+    "DJANGO_EMAIL_HOST_USER",
+    ""
+)
+
+EMAIL_HOST_PASSWORD = os.getenv(
+    "DJANGO_EMAIL_HOST_PASSWORD",
+    ""
+)
+
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DJANGO_DEFAULT_FROM_EMAIL",
+    EMAIL_HOST_USER or "no-reply@example.com"
+)
+
+
+# =========================================================
+# DEFAULT PRIMARY KEY
+# =========================================================
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
