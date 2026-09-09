@@ -7,7 +7,7 @@ import LoadingSpinner from '../../components/LoadingSpinner.jsx'
 import PageHeader from '../../components/PageHeader.jsx'
 import SectionCard from '../../components/SectionCard.jsx'
 import StatusBadge from '../../components/StatusBadge.jsx'
-import { financeApi } from '../../services/api.js'
+import { financeApi, mediaUrl } from '../../services/api.js'
 
 export default function FinanceCustomerDetailPage() {
   const { customerId } = useParams()
@@ -104,7 +104,7 @@ export default function FinanceCustomerDetailPage() {
         {customer?.visit_photo && (
           <div className="mb-5 overflow-hidden rounded-[28px] border border-slate-200 bg-white">
             <img
-              src={`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'}${customer.visit_photo}`}
+              src={mediaUrl(customer.visit_photo)}
               alt={`${customer.name} visit`}
               className="h-72 w-full object-cover"
             />

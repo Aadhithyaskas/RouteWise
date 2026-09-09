@@ -26,6 +26,17 @@ export function AuthProvider({ children }) {
     }
   }, [authState])
 
+  useEffect(() => {
+    const handleExpiredSession = () => {
+      setAuthState(null)
+      toast.info('Your session expired. Please sign in again.')
+      navigate('/login', { replace: true })
+    }
+
+    window.addEventListener('routewise:session-expired', handleExpiredSession)
+    return () => window.removeEventListener('routewise:session-expired', handleExpiredSession)
+  }, [navigate])
+
   const login = async (credentials) => {
     const response = await authApi.login(credentials)
     const nextState = {

@@ -1,6 +1,9 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
+// Keep production requests on the same origin as the React bundle. This lets
+// Django serve both the UI and API without a machine-specific localhost URL.
+// Vite proxies these paths to Django during local development.
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 const AUTH_STORAGE_KEY = 'routewise-auth'
 
 export const api = axios.create({
@@ -8,16 +11,62 @@ export const api = axios.create({
   timeout: 15000,
 })
 
+const refreshClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 15000,
+})
+
 api.interceptors.request.use((config) => {
-  const auth = localStorage.getItem(AUTH_STORAGE_KEY)
-  if (auth) {
-    const parsed = JSON.parse(auth)
-    if (parsed?.access) {
-      config.headers.Authorization = `Bearer ${parsed.access}`
-    }
+  const parsed = getStoredAuth()
+  if (parsed?.access) {
+    config.headers.Authorization = `Bearer ${parsed.access}`
   }
   return config
 })
+
+let refreshPromise = null
+
+const getStoredAuth = () => {
+  try {
+    return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || 'null')
+  } catch {
+    return null
+  }
+}
+
+const refreshAccessToken = async () => {
+  const auth = getStoredAuth()
+  if (!auth?.refresh) throw new Error('No refresh token available')
+
+  const response = await refreshClient.post('/admin-api/auth/jwt/refresh/', { refresh: auth.refresh })
+  const nextAuth = { ...auth, access: response.data.access }
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextAuth))
+  return nextAuth.access
+}
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const request = error.config
+    if (error.response?.status !== 401 || !request || request._retriedAfterRefresh) {
+      return Promise.reject(error)
+    }
+
+    request._retriedAfterRefresh = true
+    try {
+      refreshPromise ||= refreshAccessToken().finally(() => {
+        refreshPromise = null
+      })
+      const access = await refreshPromise
+      request.headers.Authorization = `Bearer ${access}`
+      return api(request)
+    } catch {
+      localStorage.removeItem(AUTH_STORAGE_KEY)
+      window.dispatchEvent(new Event('routewise:session-expired'))
+      return Promise.reject(error)
+    }
+  },
+)
 
 const getErrorStatus = (error) => error?.response?.status
 
@@ -134,4 +183,9 @@ export const financeApi = {
 export const customerApi = {
   submitRequest: (payload) =>
     apiRequestWithFallback({ method: 'post', urls: ['/customer-api/request/', '/customer/request/'], data: payload }),
+}
+
+export const mediaUrl = (path) => {
+  if (!path) return ''
+  return /^https?:\/\//i.test(path) ? path : `${API_BASE_URL}${path}`
 }
